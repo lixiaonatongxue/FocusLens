@@ -39,6 +39,9 @@ def _fmt_dur(sec) -> str:
 def cmd_collect(args, cfg):
     from agent.collector import Collector
 
+    if args.duration is not None and args.duration <= 0:
+        sys.exit("--duration 需要正数（秒）")
+
     store = Store(db_path(cfg))
     classifier = _classifier()
     counter = {"n": 0}
@@ -78,12 +81,15 @@ def cmd_classify(args, cfg):
 def cmd_report(args, cfg):
     from agent import report
 
+    try:
+        day = report.parse_date(args.date) if args.date else None
+    except ValueError:
+        sys.exit("日期格式应为 YYYY-MM-DD，例如 --date 2026-10-24")
     store = Store(db_path(cfg))
     try:
         if args.what == "week":
             text = report.render_week(store, _classifier())
         else:
-            day = report.parse_date(args.date) if args.date else None
             text = report.render_day(store, _classifier(), day)
     finally:
         store.close()

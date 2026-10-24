@@ -193,7 +193,13 @@ class Collector:
         self.start_poller()
         hook = None
         try:
-            hook = winapi.ForegroundHook(self.sample)
+            def _hook_sample():
+                try:
+                    self.sample()
+                except Exception:
+                    pass  # 单次采样失败不终止采集，也不让异常穿过 ctypes 回调
+
+            hook = winapi.ForegroundHook(_hook_sample)
             self.sample()
             if duration is not None:
                 timer = threading.Timer(duration, stop.set)
