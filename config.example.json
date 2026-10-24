@@ -1,0 +1,10 @@
+{
+  "idle_seconds": 300,
+  "poll_interval": 1.0,
+  "privacy": "default",
+  "port": 8810,
+  "db_path": "data/focuslens.db",
+  "focus_categories": ["dev"],
+  "focus_merge_gap_seconds": 300,
+  "focus_min_session_seconds": 900
+}

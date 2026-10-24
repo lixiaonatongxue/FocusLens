@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 本地数据与个人配置：任何真实记录不进仓库
+data/*.db
+data/*.db-wal
+data/*.db-shm
+config.json
+
+# 打包产物
+build/
+dist/
+*.spec
+
+# 系统
+.DS_Store
+Thumbs.db
