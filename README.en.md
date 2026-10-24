@@ -46,6 +46,9 @@ python -m venv .venv
 .venv/Scripts/python.exe run.py report today     # CLI
 .venv/Scripts/python.exe run.py serve            # Web → http://127.0.0.1:8810
 
+# 3) (Recommended) configure once — collection starts automatically at every logon
+.venv/Scripts/python.exe run.py autostart
+
 # No data yet and want a preview?
 .venv/Scripts/python.exe run.py demo             # seeds a fictional "day of a developer"
 ```
@@ -54,6 +57,7 @@ Other commands:
 
 | Command | What it does |
 |---|---|
+| `run.py autostart` | auto-start at logon (installs a per-user startup entry and launches immediately); `--remove` stops and uninstalls |
 | `run.py report week` | last 7 days as a text report |
 | `run.py report today --date 2026-10-24` | view a specific date |
 | `run.py classify --exe WeChat.exe` | debug rule matching (use it when contributing rules) |
@@ -67,7 +71,7 @@ foreground events (SetWinEventHook) ──┐
 1s polling fallback + idle detection ─┘   (exe rules + browser-title subdivision)
 ```
 
-- **Collection**: event-driven window-switch hook plus a 1-second polling fallback; title changes (such as browser tab switches) also split sessions;
+- **Collection**: event-driven window-switch hook plus a 1-second polling fallback; title changes (such as browser tab switches) also split sessions; a session is checkpointed to disk every 60 seconds so the report stays near real-time;
 - **Idle detection**: no keyboard/mouse input for 5 minutes (configurable) marks you as "away", with the first 5 minutes of grace credited to the current app;
 - **Sleep guard**: large sampling gaps (sleep/hibernate) close the current segment, so sleep time is never attributed to any app;
 - **Browser subdivision**: Chrome/Edge window titles contain the page name ("xxx - Bilibili"); `rules/sites.json` subdivides browser time down to the site level.
@@ -82,9 +86,9 @@ Verify it with `python run.py classify --exe Weixin.exe`, then submit. See [CONT
 
 ## Roadmap
 
-- [x] v0.1 collection / classification / SQLite / CLI report / local web report
+- [x] v0.1 collection / classification / SQLite / CLI report / local web report / auto-start at logon
 - [ ] v0.2 shareable daily-card image export, "slacking" alerts
-- [ ] v0.3 tray icon, auto-start, UWP app identification (`GetApplicationUserModelId`), CSV export
+- [ ] v0.3 tray icon, UWP app identification (`GetApplicationUserModelId`), CSV export
 
 ## Development
 

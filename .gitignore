@@ -9,6 +9,8 @@ venv/
 data/*.db
 data/*.db-wal
 data/*.db-shm
+data/*.log
+data/*.pid
 config.json
 
 # 打包产物

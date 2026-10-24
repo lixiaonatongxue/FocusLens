@@ -70,7 +70,7 @@ class CollectorTest(unittest.TestCase):
         )
 
     def test_idle_transition_and_resume(self):
-        h = Harness()
+        h = Harness(checkpoint_seconds=0)
         h.collector.sample()                      # Code 从 10000 开始
         for _ in range(7):                        # 模拟常规采样节奏（每 50s 一次）
             h.clock += 50
@@ -91,6 +91,25 @@ class CollectorTest(unittest.TestCase):
              (10399, 10495, "", "", "idle"),
              (10495, 10590, "Code.exe", "main.py - Code", "dev")],
         )
+
+    def test_long_session_checkpoints_every_60s(self):
+        h = Harness()
+        h.collector.sample()                      # Code 从 10000 开始
+        for _ in range(4):
+            h.tick(20)                            # 10080，期间在 10060 触发一次落盘
+        h.collector.flush()
+        self.assertEqual(
+            [(e[0], e[1]) for e in h.store.events],
+            [(10000, 10060), (10060, 10080)],
+        )
+
+    def test_checkpoints_can_be_disabled(self):
+        h = Harness(checkpoint_seconds=0)
+        h.collector.sample()
+        for _ in range(4):
+            h.tick(20)
+        h.collector.flush()
+        self.assertEqual([(e[0], e[1]) for e in h.store.events], [(10000, 10080)])
 
     def test_no_foreground_window_marks_idle(self):
         h = Harness()

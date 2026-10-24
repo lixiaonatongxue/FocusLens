@@ -45,6 +45,7 @@ class Collector:
         idle_seconds: float = 300,
         poll_interval: float = 1.0,
         privacy: str = "default",
+        checkpoint_seconds: float = 60,
         now_fn: Callable[[], float] = time.time,
         idle_ms_fn: Callable[[], int] = _default_idle_ms,
         foreground_fn: Callable[[], Optional[tuple]] = _default_foreground,
@@ -57,6 +58,7 @@ class Collector:
         self.idle_seconds = idle_seconds
         self.poll_interval = poll_interval
         self.privacy = privacy
+        self.checkpoint_seconds = max(0.0, checkpoint_seconds)
         self._now = now_fn
         self._idle_ms = idle_ms_fn
         self._foreground = foreground_fn
@@ -104,7 +106,16 @@ class Collector:
                     and cur["exe"] == exe
                     and cur["title"] == title
                 )
-                if not same_window:
+                if same_window:
+                    # 周期性落盘：长时间停留在同一窗口时，报表也能近实时可见，
+                    # 进程意外退出最多丢 checkpoint 周期内的数据
+                    if (
+                        self.checkpoint_seconds
+                        and now - cur["start"] >= self.checkpoint_seconds
+                    ):
+                        self._close(now)
+                        self._cur = {**cur, "start": now}
+                else:
                     self._close(now)
                     result = self.classifier.classify(exe, title)
                     start = now if self._prev_end is None else max(resume, self._prev_end)
@@ -174,7 +185,7 @@ class Collector:
             self._poller.join(timeout=3)
         self.flush()
 
-    def run_forever(self, duration: Optional[float] = None) -> None:
+    def run_forever(self, duration: Optional[float] = None, quiet: bool = False) -> None:
         """阻塞运行：安装前台钩子并泵消息；duration 秒后自动停止（None=直到 Ctrl+C）。"""
         from . import winapi
 
@@ -205,7 +216,8 @@ class Collector:
                 timer = threading.Timer(duration, stop.set)
                 timer.daemon = True
                 timer.start()
-            print("采集中… Ctrl+C 停止")
+            if not quiet:
+                print("采集中… Ctrl+C 停止")
             winapi.pump_messages(stop.is_set)
         finally:
             if hook is not None:

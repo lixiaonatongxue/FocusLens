@@ -2,6 +2,7 @@
 
 用法：
   python run.py collect [--duration 秒]     采集（默认一直运行，Ctrl+C 停止）
+  python run.py autostart [--remove]        开机自动采集：安装/立即启动/卸载
   python run.py classify --exe X [--title Y] 调试规则匹配（贡献规则时用）
   python run.py report [today|week]          文本报表
   python run.py serve [--port N]             本地 Web 报表（默认 127.0.0.1:8810）
@@ -12,6 +13,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
@@ -37,10 +39,16 @@ def _fmt_dur(sec) -> str:
 
 
 def cmd_collect(args, cfg):
+    from agent import autostart as auto
     from agent.collector import Collector
 
     if args.duration is not None and args.duration <= 0:
         sys.exit("--duration 需要正数（秒）")
+    data_dir = db_path(cfg).parent
+    running = auto.collector_running(data_dir)
+    if running:
+        sys.exit(f"采集器已在运行（PID {running}）。停止：python run.py autostart --remove")
+    auto.write_pid(data_dir, os.getpid())
 
     store = Store(db_path(cfg))
     classifier = _classifier()
@@ -57,19 +65,46 @@ def cmd_collect(args, cfg):
         idle_seconds=cfg["idle_seconds"],
         poll_interval=cfg["poll_interval"],
         privacy=cfg["privacy"],
-        on_event=on_event,
+        checkpoint_seconds=cfg.get("checkpoint_seconds", 60),
+        on_event=None if args.quiet else on_event,
     )
-    print(
-        f"FocusLens 采集启动  privacy={cfg['privacy']}  空闲阈值={cfg['idle_seconds']}s\n"
-        f"数据落盘 → {db_path(cfg)}"
-    )
-    if args.duration:
-        print(f"限时运行 {args.duration:.0f} 秒后自动停止")
+    if not args.quiet:
+        print(
+            f"FocusLens 采集启动  privacy={cfg['privacy']}  空闲阈值={cfg['idle_seconds']}s\n"
+            f"数据落盘 → {db_path(cfg)}"
+        )
+        if args.duration:
+            print(f"限时运行 {args.duration:.0f} 秒后自动停止")
     try:
-        collector.run_forever(args.duration)
+        collector.run_forever(args.duration, quiet=args.quiet)
     finally:
         store.close()
-        print(f"\n本次共记录 {counter['n']} 段。运行 `python run.py report today` 查看。")
+        auto.clear_pid(data_dir)
+        if not args.quiet:
+            print(f"\n本次共记录 {counter['n']} 段。运行 `python run.py report today` 查看。")
+
+
+def cmd_autostart(args, cfg):
+    from agent import autostart as auto
+
+    data_dir = db_path(cfg).parent
+    if args.remove:
+        stopped = auto.stop_collector(data_dir)
+        removed = auto.uninstall()
+        print(
+            ("已停止后台采集；" if stopped else "后台采集未在运行；")
+            + ("已删除开机启动项。" if removed else "未发现开机启动项。")
+        )
+        return
+    vbs = auto.install(ROOT)
+    print(f"开机启动项已安装 → {vbs}")
+    running = auto.collector_running(data_dir)
+    if running:
+        print(f"采集器已在后台运行（PID {running}）。")
+    else:
+        pid = auto.launch_collector_now(ROOT, data_dir)
+        print(f"已启动后台采集（无窗口，PID {pid}），日志 → {data_dir / 'collector.log'}")
+    print("之后每次开机登录都会自动开始采集；停止并卸载：python run.py autostart --remove")
 
 
 def cmd_classify(args, cfg):
@@ -139,7 +174,12 @@ def main(argv=None):
 
     p = sub.add_parser("collect", help="采集前台应用使用时间")
     p.add_argument("--duration", type=float, default=None, help="限时运行秒数（测试用）")
+    p.add_argument("--quiet", action="store_true", help="静默模式（后台运行用）")
     p.set_defaults(func=cmd_collect)
+
+    p = sub.add_parser("autostart", help="开机自动采集（一次配置）")
+    p.add_argument("--remove", action="store_true", help="停止后台采集并删除开机启动项")
+    p.set_defaults(func=cmd_autostart)
 
     p = sub.add_parser("classify", help="调试规则匹配")
     p.add_argument("--exe", required=True)

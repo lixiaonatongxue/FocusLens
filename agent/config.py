@@ -18,6 +18,8 @@ DEFAULTS: Dict[str, Any] = {
     "privacy": "default",
     "port": 8810,
     "db_path": "data/focuslens.db",
+    # 同一窗口停留超过该秒数时周期性落盘（报表近实时 + 崩溃少丢数据）
+    "checkpoint_seconds": 60,
     "focus_categories": ["dev"],
     "focus_merge_gap_seconds": 300,
     "focus_min_session_seconds": 900,

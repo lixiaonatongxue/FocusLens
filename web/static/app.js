@@ -365,7 +365,10 @@ const template = `
 
     <div v-if="emptyDay" class="empty card">
       <p>这一天还没有记录。</p>
-      <p class="hint">运行 <code>python run.py collect</code> 开始采集，或 <code>python run.py demo</code> 先看演示数据</p>
+      <p class="hint">
+        一次配置每天自动采集（推荐）：<code>python run.py autostart</code>；
+        或先看演示数据：<code>python run.py demo</code>
+      </p>
     </div>
 
     <div v-else-if="state.summary" class="cards">
