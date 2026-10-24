@@ -4,9 +4,11 @@
 const { createApp, computed, nextTick, onMounted, reactive } = Vue;
 
 const state = reactive({
-  tab: "today",
+  tab: "today", // today | history
+  historyView: "stack", // stack=逐日堆叠 | day=日期详情
   meta: { version: "", categories: {}, privacy: "default", focus_categories: [] },
   date: new Date().toLocaleDateString("sv-SE"), // 本地时区 YYYY-MM-DD
+  historyDate: new Date(Date.now() - 86400000).toLocaleDateString("sv-SE"),
   summary: null,
   range: null,
   days: 14,
@@ -60,11 +62,20 @@ async function loadMeta() {
   state.meta = await fetchJSON("/api/meta");
 }
 
+// 当前生效的日期：今日页用 state.date，历史-日期详情用 state.historyDate
+const activeDate = computed({
+  get: () => (state.tab === "today" ? state.date : state.historyDate),
+  set: (v) => {
+    if (state.tab === "today") state.date = v;
+    else state.historyDate = v;
+  },
+});
+
 async function loadSummary() {
   state.loading = true;
   state.error = "";
   try {
-    state.summary = await fetchJSON(`/api/summary?date=${state.date}`);
+    state.summary = await fetchJSON(`/api/summary?date=${activeDate.value}`);
     await nextTick();
     renderToday();
   } catch (e) {
@@ -89,6 +100,14 @@ async function loadRange() {
 function switchTab(tab) {
   state.tab = tab;
   if (tab === "today") loadSummary();
+  else if (state.historyView === "day") loadSummary();
+  else loadRange();
+}
+
+function switchHistoryView(view) {
+  if (state.historyView === view) return;
+  state.historyView = view;
+  if (view === "day") loadSummary();
   else loadRange();
 }
 
@@ -222,7 +241,7 @@ function renderToday() {
             left: "34%",
             top: "56%",
             style: {
-              text: "今日活跃",
+              text: "当日活跃",
               textAlign: "center",
               fill: "#7E8798",
               font: "12px 'Segoe UI', 'Microsoft YaHei', sans-serif",
@@ -318,6 +337,16 @@ function renderHistory() {
     },
     true
   );
+  // 点击柱子下钻到当天详情（off 防止重复注册）
+  hc.off("click");
+  hc.on("click", (params) => {
+    if (!params || params.seriesType !== "bar") return;
+    const d = state.range && state.range.days[params.dataIndex];
+    if (!d) return;
+    state.historyDate = d.date;
+    state.historyView = "day";
+    loadSummary();
+  });
 }
 
 /* ---------- 视图 ---------- */
@@ -338,31 +367,8 @@ const focusLabel = computed(() =>
   (state.meta.focus_categories || []).map(catName).join("/")
 );
 
-const template = `
-<div class="wrap">
-  <header class="topbar">
-    <div class="brand">
-      <span class="logo">◎</span>
-      <div>
-        <h1>FocusLens</h1>
-        <p>焦点时间统计 · 数据 100% 留在本机</p>
-      </div>
-    </div>
-    <nav class="tabs">
-      <button :class="{on: state.tab==='today'}" @click="switchTab('today')">今日</button>
-      <button :class="{on: state.tab==='history'}" @click="switchTab('history')">历史</button>
-    </nav>
-    <span class="badge">零上传 · v{{ state.meta.version }}</span>
-  </header>
-
-  <div v-if="state.error" class="error">{{ state.error }}</div>
-
-  <template v-if="state.tab==='today'">
-    <div class="toolbar">
-      <input type="date" v-model="state.date" @change="loadSummary">
-      <span v-if="state.summary" class="weekday">{{ state.summary.date }} {{ state.summary.weekday }}</span>
-    </div>
-
+/* 单日详情卡片块：今日页与历史-日期详情共用（同一时刻只渲染其一） */
+const DAY_DETAIL = `
     <div v-if="emptyDay" class="empty card">
       <p>这一天还没有记录。</p>
       <p class="hint">
@@ -374,7 +380,7 @@ const template = `
     <div v-else-if="state.summary" class="cards">
       <div class="card span4 overview">
         <div class="big">{{ fmtDur(state.summary.active_seconds) }}</div>
-        <div class="sub">今日活跃</div>
+        <div class="sub">当日活跃</div>
         <div class="row"><span>离开</span><b>{{ fmtDur(state.summary.idle_seconds) }}</b></div>
         <div class="row"><span>记录段数</span><b>{{ state.summary.segment_count }}</b></div>
         <div class="row"><span>专注合计</span><b>{{ fmtDur(state.summary.focus.total_seconds) }}</b></div>
@@ -402,23 +408,66 @@ const template = `
         </ul>
       </div>
     </div>
+`;
+
+const template = `
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">◎</span>
+      <div>
+        <h1>FocusLens</h1>
+        <p>焦点时间统计 · 数据 100% 留在本机</p>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button :class="{on: state.tab==='today'}" @click="switchTab('today')">今日</button>
+      <button :class="{on: state.tab==='history'}" @click="switchTab('history')">历史</button>
+    </nav>
+    <span class="badge">零上传 · v{{ state.meta.version }}</span>
+  </header>
+
+  <div v-if="state.error" class="error">{{ state.error }}</div>
+
+  <!-- 今日 -->
+  <template v-if="state.tab==='today'">
+    <div class="toolbar">
+      <input type="date" v-model="activeDate" @change="loadSummary">
+      <span v-if="state.summary" class="weekday">{{ state.summary.date }} {{ state.summary.weekday }}</span>
+    </div>
+${DAY_DETAIL}
   </template>
 
+  <!-- 历史 -->
   <template v-else>
     <div class="toolbar">
-      <select v-model.number="state.days" @change="loadRange">
+      <div class="seg">
+        <button :class="{on: state.historyView==='stack'}" @click="switchHistoryView('stack')">逐日堆叠</button>
+        <button :class="{on: state.historyView==='day'}" @click="switchHistoryView('day')">日期详情</button>
+      </div>
+      <select v-if="state.historyView==='stack'" v-model.number="state.days" @change="loadRange">
         <option :value="7">近 7 天</option>
         <option :value="14">近 14 天</option>
         <option :value="30">近 30 天</option>
       </select>
+      <template v-if="state.historyView==='day'">
+        <input type="date" v-model="activeDate" @change="loadSummary">
+        <span v-if="state.summary" class="weekday">{{ state.summary.date }} {{ state.summary.weekday }}</span>
+      </template>
     </div>
-    <div class="cards">
-      <div class="card span12">
-        <h3>逐日类别堆叠</h3>
-        <div v-if="historyEmpty" class="hint">这段时间还没有任何记录</div>
-        <div v-show="!historyEmpty" id="chart-history" class="chart h300"></div>
+
+    <template v-if="state.historyView==='stack'">
+      <div class="cards">
+        <div class="card span12">
+          <h3>逐日类别堆叠 <small>点击某天的柱子查看当天详情</small></h3>
+          <div v-if="historyEmpty" class="hint">这段时间还没有任何记录</div>
+          <div v-show="!historyEmpty" id="chart-history" class="chart h300"></div>
+        </div>
       </div>
-    </div>
+    </template>
+    <template v-else>
+${DAY_DETAIL}
+    </template>
   </template>
 
   <footer>
@@ -442,10 +491,12 @@ createApp({
     });
     return {
       state,
+      activeDate,
       emptyDay,
       topSessions,
       focusLabel,
       switchTab,
+      switchHistoryView,
       loadSummary,
       loadRange,
       fmtDur,

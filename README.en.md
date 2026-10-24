@@ -10,7 +10,7 @@ The iPhone has Screen Time; Windows never got an equivalent. RescueTime is a clo
 
 - **Privacy first**: runs fully locally, makes zero network requests, and your data can be wiped with one command — open source, so these claims are verifiable;
 - **Chinese rule library out of the box**: WeChat / QQ / DingTalk / NetEase Cloud Music / Bilibili / Zhihu / JD… correctly categorized from the moment you install it; the rule library accepts community PRs;
-- **Readable daily report**: 24-hour timeline, category breakdown, top apps, and focus-session stats;
+- **Readable daily report**: 24-hour timeline, category breakdown, top apps, and focus-session stats; the history tab shows the full detail of any day (click a bar in the stacked chart to drill down);
 - **Lightweight**: the collector uses only the Python standard library (Win32 APIs via ctypes) — no third-party dependencies.
 
 ## Privacy (read this first)
