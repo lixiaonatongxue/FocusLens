@@ -2,6 +2,8 @@
 
 > Windows 上的「屏幕使用时间」：自动记录你在每个应用上花的时间，**100% 本地**，零网络请求。
 
+**中文** | [English](README.en.md)
+
 ![FocusLens 今日报表](docs/screenshot-today.png)
 
 iPhone 有屏幕使用时间，Windows 一直没有对等物。RescueTime 是云服务 + 订阅制，现有开源方案对中文应用/网站的识别又偏弱——FocusLens 想补上这个空缺：
