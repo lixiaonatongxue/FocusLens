@@ -56,7 +56,7 @@ def meta():
 
 
 @app.get("/api/summary")
-def summary(day: str = Query(default=None)):
+def summary(day: str = Query(default=None, alias="date")):
     try:
         target = parse_date(day) if day else date.today()
     except ValueError:
