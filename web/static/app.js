@@ -97,6 +97,14 @@ function switchTab(tab) {
 function ensureChart(id) {
   const el = document.getElementById(id);
   if (!el) return null;
+  // Vue 用 v-if 切换标签页会销毁重建 DOM，旧图表实例仍绑在已移除的节点上，
+  // 直接复用会画到"看不见"的画布——发现绑定节点变化时销毁重建。
+  if (charts[id]) {
+    if (charts[id].isDisposed() || charts[id].getDom() !== el) {
+      charts[id].dispose();
+      delete charts[id];
+    }
+  }
   if (!charts[id]) charts[id] = echarts.init(el);
   return charts[id];
 }
@@ -315,6 +323,12 @@ function renderHistory() {
 /* ---------- 视图 ---------- */
 
 const emptyDay = computed(() => state.summary && !state.summary.segment_count);
+const historyEmpty = computed(
+  () =>
+    state.range &&
+    state.range.days &&
+    state.range.days.every((d) => !d.active_seconds && !d.idle_seconds)
+);
 const topSessions = computed(() =>
   state.summary
     ? [...state.summary.focus.sessions].sort((a, b) => b.seconds - a.seconds).slice(0, 6)
@@ -398,7 +412,8 @@ const template = `
     <div class="cards">
       <div class="card span12">
         <h3>逐日类别堆叠</h3>
-        <div id="chart-history" class="chart h300"></div>
+        <div v-if="historyEmpty" class="hint">这段时间还没有任何记录</div>
+        <div v-show="!historyEmpty" id="chart-history" class="chart h300"></div>
       </div>
     </div>
   </template>
