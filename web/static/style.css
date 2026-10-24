@@ -1,0 +1,100 @@
+/* FocusLens 深色主题 */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #0D1117;
+  color: #E6EBF4;
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 14px;
+}
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 26px 20px 48px; }
+
+/* 顶栏 */
+.topbar { display: flex; align-items: center; gap: 18px; margin-bottom: 22px; }
+.brand { display: flex; gap: 12px; align-items: center; }
+.logo {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #EAF1FF;
+  background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+  box-shadow: 0 4px 18px rgba(59, 130, 246, 0.35);
+}
+.brand h1 { margin: 0; font-size: 20px; letter-spacing: 0.5px; }
+.brand p { margin: 2px 0 0; color: #7E8798; font-size: 12px; }
+
+.tabs button {
+  background: #141A26; border: 1px solid #232B3B; color: #98A2B6;
+  padding: 7px 20px; cursor: pointer; font-size: 14px; transition: all 0.15s;
+}
+.tabs button:first-child { border-radius: 8px 0 0 8px; }
+.tabs button:last-child { border-radius: 0 8px 8px 0; margin-left: -1px; }
+.tabs button.on { background: #25304A; border-color: #33415E; color: #EAF0FC; }
+
+.badge {
+  margin-left: auto; font-size: 12px; color: #6BCBAA;
+  border: 1px solid #1F4A3D; border-radius: 999px; padding: 4px 12px;
+  white-space: nowrap;
+}
+
+/* 工具行 */
+.toolbar { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+input[type="date"], select {
+  background: #141A26; color: #DCE3F0; border: 1px solid #232B3B;
+  border-radius: 8px; padding: 6px 10px; font-size: 14px;
+}
+.weekday { color: #7E8798; font-size: 13px; }
+
+/* 卡片网格 */
+.cards { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+.card {
+  background: #141A26; border: 1px solid #1F2735; border-radius: 14px;
+  padding: 16px 18px;
+}
+.span4 { grid-column: span 4; }
+.span12 { grid-column: span 12; }
+.card h3 { margin: 0 0 8px; font-size: 14px; color: #AEB7C9; font-weight: 600; }
+.card h3 small { color: #66708A; font-weight: 400; margin-left: 10px; font-size: 12px; }
+
+.chart.h240 { height: 240px; }
+.chart.h150 { height: 150px; }
+.chart.h300 { height: 300px; }
+
+/* 总览卡 */
+.overview .big { font-size: 34px; font-weight: 700; }
+.overview .sub { color: #7E8798; margin: 2px 0 12px; }
+.overview .row {
+  display: flex; justify-content: space-between; padding: 7px 0;
+  border-top: 1px dashed #1F2735; font-size: 13px; color: #98A2B6;
+}
+.overview .row b { color: #DCE3F0; font-weight: 600; }
+
+/* 专注时段 */
+.sessions { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.sessions li {
+  background: #1A2130; border: 1px solid #232B3B; border-radius: 10px;
+  padding: 8px 14px; font-size: 13px; display: flex; gap: 10px; align-items: center;
+}
+.sessions .time { color: #8B93A6; }
+.sessions b { color: #DCE3F0; }
+
+/* 空态 / 提示 / 错误 */
+.empty { text-align: center; padding: 40px 20px; grid-column: span 12; }
+.empty p { margin: 6px 0; color: #98A2B6; }
+.hint { color: #66708A; font-size: 13px; }
+code {
+  background: #1A2130; border: 1px solid #232B3B; border-radius: 6px;
+  padding: 1px 6px; font-size: 12px; color: #9FB6E8;
+}
+.error {
+  background: #3A1B22; border: 1px solid #7A2E3C; color: #FFB4C0;
+  padding: 10px 14px; border-radius: 10px; margin-bottom: 14px;
+}
+
+footer { margin-top: 26px; text-align: center; color: #5A6478; font-size: 12px; }
+
+@media (max-width: 900px) {
+  .span4 { grid-column: span 12; }
+  .badge { display: none; }
+}

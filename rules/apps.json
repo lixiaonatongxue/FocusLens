@@ -1,5 +1,7 @@
 [
   {"match": {"exe": ["Code.exe"]}, "category": "dev", "name": "VS Code"},
+  {"match": {"exe": ["Cursor.exe"]}, "category": "dev", "name": "Cursor"},
+  {"match": {"exe": ["ZCode.exe"]}, "category": "dev", "name": "ZCode"},
   {"match": {"exe": ["idea64.exe"]}, "category": "dev", "name": "IntelliJ IDEA"},
   {"match": {"exe": ["pycharm64.exe"]}, "category": "dev", "name": "PyCharm"},
   {"match": {"exe": ["webstorm64.exe"]}, "category": "dev", "name": "WebStorm"},
